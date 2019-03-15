@@ -1,4 +1,4 @@
-dataset = 'cotton';
+dataset = 'boxes';
 image_sz = [512, 512];
 image_u_sz = 9;
 image_v_sz = 9;
@@ -11,8 +11,8 @@ lf_sz = image_u_sz * image_v_sz;
 
 lf_array = zeros(image_sz(1), image_sz(2), 3, image_u_sz, image_v_sz);
 
-for idx=1:81
-    lf_array(:,:,:,mod(idx,image_u_sz)+1, ceil(idx/image_u_sz)) = im2double(imread(['../' dataset '/input_Cam' num2str(idx-1,'%.3u') '.png']));
+for idx=0:80
+    lf_array(:,:,:,mod(idx,image_u_sz)+1, floor(idx/image_u_sz)+1) = im2double(imread(['../' dataset '/input_Cam' num2str(idx,'%.3u') '.png']));
 end
 
 tic
@@ -73,7 +73,7 @@ addpath(['../' dataset]);
 convertBlenderTo5D(['../' dataset]);
 load(['../' dataset '/LF.mat']);
 [X, Y, Z] = getPointcloud(LF, 'disp', h);
-imshow(Z, []); colormap(flipud(parula)); colorbar;
+figure, imshow(Z, []); colormap(flipud(parula)); colorbar;
 
 imwrite(Z, [dataset '_adelson_depth.png']);
 
@@ -81,4 +81,13 @@ addpath('..');
 depthGroundTruth = parsePfm(['../' dataset '/gt_depth_lowres.pfm'])*1000;
 figure, imshow(depthGroundTruth, []); colormap(flipud(parula)); colorbar;
 
-psnr(depthGroundTruth, Z);
+psnr(Z, depthGroundTruth, max(Z, [], 'all'))
+
+error = (Z - depthGroundTruth).^2;
+figure, imshow(error, []), colorbar
+
+filename = [dataset '_adelson.mat'];
+save(filename, 'Z')
+
+filename = [dataset '_error.mat'];
+save(filename, 'error')
